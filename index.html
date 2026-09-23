@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>TVM Calculator | BS3210 Finance for Engineers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:oklch(0.975 0.009 250);--surface:oklch(0.995 0.003 250);--ink:oklch(0.205 0.045 255);
+  --muted:oklch(0.47 0.035 250);--line:oklch(0.88 0.018 250);
+  --accent:oklch(0.66 0.145 224);--accent-ink:oklch(0.46 0.13 238);--accent-soft:oklch(0.94 0.04 224);--accent-on-dark:oklch(0.82 0.11 224);
+  --warm:oklch(0.72 0.16 55);--warm-ink:oklch(0.44 0.11 50);--warm-soft:oklch(0.95 0.04 55);
+  --danger:oklch(0.52 0.20 28);--danger-soft:oklch(0.96 0.035 28);
+  --font:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid color-mix(in oklab,var(--accent-ink) 55%,transparent);outline-offset:2px}
+.skip{position:absolute;left:-9999px;top:8px;background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:6px;z-index:50}
+.skip:focus{left:12px}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;max-width:1440px;margin:auto;border-inline:1px solid var(--line)}
+.side{border-right:1px solid var(--line);padding:26px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 10px 20px;border-bottom:1px solid var(--line)}
+.brand::before{content:"TV";display:grid;place-items:center;width:38px;height:38px;margin-bottom:12px;border-radius:8px;background:var(--ink);color:var(--paper);font:600 13px var(--mono)}
+.brand h1{margin:0;font-size:1.15rem;line-height:1.25;font-weight:800}
+.brand p{margin:5px 0 0;font-size:.86rem;color:var(--muted);line-height:1.45}
+.grp{margin:22px 10px 6px;font-size:.84rem;font-weight:700;color:var(--muted)}
+nav a{display:block;padding:10px 12px;border-radius:8px;color:var(--ink);text-decoration:none}
+nav a strong{display:block;font-size:.98rem;font-weight:700}
+nav a span{display:block;font-size:.84rem;color:var(--muted);margin-top:1px}
+nav a:hover{background:color-mix(in oklab,var(--ink) 5%,transparent)}
+nav a[aria-current="page"]{background:var(--accent-soft);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 35%,transparent)}
+nav a[aria-current="page"] strong::before{content:"";display:inline-block;width:8px;height:8px;margin-right:9px;border-radius:50%;background:var(--accent-ink);vertical-align:1px}
+.side-note{margin:26px 10px 0;padding-top:16px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted);line-height:1.55}
+.chooser{display:none}
+main{padding:34px clamp(20px,4vw,52px) 72px;min-width:0}
+.panel{max-width:1080px;margin:auto}
+.ph{margin-bottom:26px}
+.ph h2{margin:0 0 8px;font-size:clamp(1.8rem,3vw,2.5rem);line-height:1.15;font-weight:800}
+.ph p{margin:0;color:var(--muted);max-width:60ch;font-size:1.02rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+
+/* ---------- form card ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;box-shadow:0 14px 40px -34px color-mix(in oklab,var(--ink) 50%,transparent)}
+.card-h{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 12px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.card-h h3{margin:0;font-size:1.05rem;font-weight:800}
+.link{min-height:36px;background:none;border:0;padding:4px 10px;color:var(--accent-ink);font-weight:700;cursor:pointer;border-radius:6px}
+.link:hover{background:var(--accent-soft)}
+.field{margin-bottom:22px}
+.field:last-child{margin-bottom:0}
+.field[hidden]{display:none}
+.field label,.lab{display:block;margin-bottom:7px;font-weight:700;font-size:.97rem}
+.ctl{display:flex;align-items:stretch;min-height:50px;border:1.5px solid color-mix(in oklab,var(--ink) 30%,var(--line));border-radius:9px;background:var(--surface);overflow:hidden}
+.ctl:focus-within{border-color:var(--accent-ink);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%,transparent)}
+.ctl.bad{border-color:var(--danger);background:var(--danger-soft)}
+.ctl input,.ctl select{border:0;background:transparent;padding:10px 13px;min-width:0;flex:1;font-size:1.12rem;font-weight:600;font-variant-numeric:tabular-nums}
+.ctl input:focus-visible,.ctl select:focus-visible{outline:none}
+.ctl input::placeholder{color:color-mix(in oklab,var(--muted) 70%,transparent);font-weight:500}
+.aff{display:flex;align-items:center;padding:0 13px;background:color-mix(in oklab,var(--paper) 70%,var(--surface));color:var(--muted);font-size:.9rem;font-weight:600;white-space:nowrap}
+.ctl .aff:first-child{border-right:1.5px solid var(--line);font-size:1rem}
+.ctl input+.aff{border-left:1.5px solid var(--line)}
+.ctl select.unit{flex:0 0 auto;border-left:1.5px solid var(--line);background:var(--paper);font-size:.95rem;font-weight:700;cursor:pointer}
+.ctl.sel select{width:100%;cursor:pointer}
+.echo{margin:6px 0 0;font-size:.9rem;font-weight:700;color:var(--accent-ink)}
+.echo:empty{display:none}
+.hint{margin:6px 0 0;font-size:.86rem;color:var(--muted)}
+.err{margin:7px 0 0;font-size:.9rem;font-weight:700;color:var(--danger)}
+.err:not([hidden])::before{content:"!";display:inline-grid;place-items:center;width:1.15em;height:1.15em;margin-right:7px;border-radius:50%;background:var(--danger);color:var(--surface);font-size:.78em}
+
+/* ---------- result card ---------- */
+.res{position:relative;border-radius:12px;padding:26px;background:var(--ink);color:var(--paper);box-shadow:0 24px 60px -36px color-mix(in oklab,var(--ink) 80%,transparent)}
+.hl{font-size:.95rem;font-weight:700;color:color-mix(in oklab,var(--paper) 78%,transparent)}
+.hv{display:block;margin-top:4px;font-size:clamp(2rem,4.5vw,3rem);line-height:1.12;font-weight:800;overflow-wrap:anywhere}
+.sentence{margin:10px 0 0;font-size:.97rem;line-height:1.5;color:color-mix(in oklab,var(--paper) 86%,transparent);max-width:46ch}
+.rows{margin:22px 0 0;padding:0}
+.rows>div{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-top:1px solid color-mix(in oklab,var(--paper) 16%,transparent)}
+.rows dt{color:color-mix(in oklab,var(--paper) 78%,transparent);font-size:.95rem}
+.rows dd{margin:0;font-size:1rem;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.split{display:flex;height:11px;margin-top:22px;border-radius:99px;overflow:hidden;background:color-mix(in oklab,var(--paper) 14%,transparent)}
+.seg{transition:width .4s ease}
+.seg.a{background:var(--accent)}
+.seg.b{background:var(--warm)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:11px;font-size:.86rem;color:color-mix(in oklab,var(--paper) 82%,transparent)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.dot.a{background:var(--accent)}
+.dot.b{background:var(--warm)}
+.copy{margin-top:20px;min-height:40px;padding:8px 16px;border-radius:8px;border:1.5px solid color-mix(in oklab,var(--paper) 40%,transparent);background:transparent;color:var(--paper);font-weight:700;cursor:pointer}
+.copy:hover{background:color-mix(in oklab,var(--paper) 10%,transparent)}
+.empty{padding:6px 0;color:color-mix(in oklab,var(--paper) 82%,transparent)}
+.empty strong{display:block;font-size:1.1rem;margin-bottom:4px;color:var(--paper)}
+.working{margin-top:22px;border-top:1px solid color-mix(in oklab,var(--paper) 16%,transparent);padding-top:14px}
+.working summary{cursor:pointer;font-weight:700;color:var(--accent-on-dark);border-radius:5px;min-height:32px}
+.wk{margin-top:12px;padding:14px;border-radius:8px;background:color-mix(in oklab,var(--paper) 8%,transparent);overflow-x:auto}
+.wk p{margin:0 0 9px}
+.wk p:last-child{margin-bottom:0}
+.formula{font:400 .9rem/1.7 var(--mono)}
+.wk .small{font-size:.88rem;color:color-mix(in oklab,var(--paper) 78%,transparent)}
+.wk .sub{margin-top:14px;font-size:.86rem;font-weight:700;color:color-mix(in oklab,var(--paper) 78%,transparent)}
+
+/* ---------- chart ---------- */
+.chart-card{margin-top:24px}
+.chart-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
+.chart-head h3{margin:0;font-size:1.1rem;font-weight:800}
+.chart-head p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.chart-stat{font-size:.92rem;font-weight:700;color:var(--accent-ink)}
+.chart{padding:34px 4px 0 62px}
+.plot{position:relative;height:clamp(200px,26vw,280px);touch-action:pan-y;cursor:crosshair;border-radius:4px}
+.plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.c-grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.c-area{fill:color-mix(in oklab,var(--accent) 15%,transparent)}
+.c-line{fill:none;stroke:var(--accent-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.yl{position:absolute;left:-58px;width:50px;text-align:right;transform:translateY(-50%);font-size:.8rem;color:var(--muted)}
+.xl{display:flex;justify-content:space-between;margin-top:10px;font-size:.84rem;color:var(--muted)}
+.cursor{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--muted);pointer-events:none}
+.cdot,.enddot{position:absolute;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--surface);border:3px solid var(--accent-ink);transform:translateY(-50%);pointer-events:none}
+.cursor .cdot{left:0}
+.tip{position:absolute;z-index:2;pointer-events:none;padding:7px 11px;border-radius:8px;background:var(--ink);color:var(--paper);font-size:.88rem;line-height:1.4;white-space:nowrap}
+.chart-hint{margin:12px 0 0;font-size:.84rem;color:var(--muted)}
+
+/* ---------- tables + schedule ---------- */
+.sched,.scout{margin-top:24px}
+.sched-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.tbl-wrap{max-height:min(62vh,560px);overflow:auto;border:1px solid var(--line);border-radius:8px}
+.scout .tbl-wrap{max-height:none}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:11px 16px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{position:sticky;top:0;z-index:1;background:color-mix(in oklab,var(--paper) 75%,var(--line));font-size:.85rem;font-weight:800;border-bottom:1px solid var(--line)}
+tbody tr{border-bottom:1px solid color-mix(in oklab,var(--line) 70%,transparent)}
+tbody tr:hover{background:var(--accent-soft)}
+tbody tr.yr td{border-bottom:2px solid color-mix(in oklab,var(--accent) 45%,var(--line))}
+tfoot td{font-weight:800;background:color-mix(in oklab,var(--paper) 75%,var(--line));border-top:2px solid var(--line)}
+.note{margin:12px 0 0;font-size:.86rem;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);font-weight:700;cursor:pointer}
+.btn:hover{background:color-mix(in oklab,var(--ink) 82%,var(--accent))}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:color-mix(in oklab,var(--ink) 30%,var(--line))}
+.btn.ghost:hover{background:var(--accent-soft);border-color:var(--accent-ink)}
+.segctl{display:inline-flex;border:1.5px solid color-mix(in oklab,var(--ink) 30%,var(--line));border-radius:9px;overflow:hidden;background:var(--surface)}
+.segctl label{margin:0;cursor:pointer;font-weight:700}
+.segctl input{position:absolute;opacity:0;pointer-events:none}
+.segctl span{display:flex;align-items:center;min-height:42px;padding:0 18px}
+.segctl input:checked+span{background:var(--ink);color:var(--paper)}
+.segctl input:focus-visible+span{outline:3px solid color-mix(in oklab,var(--accent-ink) 55%,transparent);outline-offset:-3px}
+
+/* ---------- scenarios ---------- */
+.insight{margin:0 0 20px;padding:14px 16px;border-left:4px solid var(--accent-ink);border-radius:6px;background:var(--accent-soft);font-weight:700}
+.hb-t{margin:0 0 12px;font-size:1rem;font-weight:800}
+.hbars{display:grid;gap:11px;margin:0 0 26px}
+.hrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px}
+.hr{font-weight:800}
+.htrack{height:16px;border-radius:99px;background:color-mix(in oklab,var(--ink) 7%,transparent);overflow:hidden}
+.hfill{display:block;height:100%;min-width:4px;border-radius:99px;background:var(--accent);transition:width .35s ease}
+.hfill.cost{background:var(--warm)}
+.hval{min-width:9ch;text-align:right;font-size:.95rem;font-weight:700}
+.tag{display:inline-block;margin-left:9px;padding:2px 8px;border-radius:5px;font-size:.78rem;font-weight:700;background:var(--accent-soft);color:var(--accent-ink)}
+.tag.hi{background:var(--warm-soft);color:var(--warm-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 13px;border-radius:7px;background:var(--paper);border:1px solid var(--line);font-size:.95rem;font-weight:700}
+.chip.custom{background:var(--surface);border-color:var(--accent-ink);color:var(--accent-ink);cursor:pointer}
+.chip.custom:hover{background:var(--accent-soft)}
+.addrate{display:flex;gap:10px;align-items:stretch}
+.addrate .ctl{flex:1;max-width:230px}
+noscript{display:block;padding:20px;background:var(--surface);margin:20px}
+
+/* ---------- mobile result bar ---------- */
+.stickybar{display:none}
+.stickybar[hidden]{display:none!important}
+
+@media (max-width:980px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .stickybar{position:fixed;z-index:20;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:10px 16px;border:0;border-radius:12px;background:var(--ink);color:var(--paper);text-align:left;cursor:pointer;box-shadow:0 14px 34px -10px rgb(0 0 0/.5)}
+  .stickybar .sb-l{display:block;font-size:.8rem;color:color-mix(in oklab,var(--paper) 78%,transparent)}
+  .stickybar .sb-v{display:block;font-size:1.2rem;font-weight:800}
+  .stickybar .sb-a{font-size:.88rem;font-weight:700;color:var(--accent-on-dark);white-space:nowrap}
+}
+@media (max-width:719px),(max-height:500px) and (max-width:1000px){
+  .app{display:block;border:0}
+  .side{position:sticky;top:0;z-index:10;height:auto;padding:10px 12px;border-right:0;border-bottom:1px solid var(--line);background:color-mix(in oklab,var(--paper) 92%,transparent);backdrop-filter:blur(14px)}
+  .brand{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;padding:0;border:0}
+  .brand::before{grid-row:1/3;width:34px;height:34px;margin:0}
+  .brand h1{font-size:1rem}
+  .brand p,.grp,.side-note,.nav-box{display:none}
+  .chooser{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;margin-top:10px}
+  .chooser label{font-size:.88rem;font-weight:700;color:var(--muted)}
+  .chooser select{min-height:44px;width:100%;border:1.5px solid color-mix(in oklab,var(--ink) 30%,var(--line));background:var(--surface);padding:0 34px 0 12px;border-radius:9px;font-size:1rem;font-weight:700}
+  main{padding:22px 14px 110px}
+  .ph{margin-bottom:20px}
+  .ph h2{font-size:1.75rem}
+  .card,.res{padding:20px}
+  .chart{padding-left:56px}
+  .tbl-wrap{margin-inline:-6px}
+}
+@media (max-height:500px) and (max-width:1000px){
+  .side{position:static;display:flex;align-items:center;gap:14px;backdrop-filter:none}
+  .chooser{margin-top:0;flex:1}
+  .ph{margin-bottom:14px}
+  .ph h2{font-size:1.5rem}
+  .stickybar{min-height:44px;padding:6px 16px}
+  .stickybar .sb-l{display:inline;margin-right:10px}
+  .stickybar .sb-v{display:inline;font-size:1.05rem}
+  main{padding-bottom:84px}
+}
+@media (max-width:540px){
+  .segctl{display:flex}
+  .segctl label{flex:1}
+  .segctl span{justify-content:center;padding:0 10px}
+  .addrate{flex-direction:column}
+  .addrate .ctl{max-width:none}
+  .hrow{grid-template-columns:44px minmax(0,1fr) auto;gap:9px}
+  .hval{min-width:0;font-size:.88rem}
+  th,td{padding:10px 12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+@media print{
+  .side,.chooser,.stickybar,.copy,.link,.dl,.prt,.segctl,.skip,.chart-card,.working,.card:not(.sched):not(.scout){display:none!important}
+  .app{display:block;border:0}
+  main{padding:0}
+  .res{background:#fff;color:#000;box-shadow:none;border:1px solid #999}
+  .res *{color:#000!important}
+  .tbl-wrap{max-height:none;overflow:visible;border:0}
+  thead th{position:static}
+  .grid{display:block}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to calculator</a>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <h1>TVM Calculator</h1>
+      <p>Time value of money, worked out step by step.</p>
+    </div>
+    <div class="chooser"><label for="calc-picker">Calculator</label><select id="calc-picker"></select></div>
+    <div class="nav-box"><nav id="nav" aria-label="Calculators"></nav></div>
+    <p class="side-note">BS3210 Finance for Engineers, Designers and Professionals. Amounts are in Indian rupees (₹) and results update as you type.</p>
+  </aside>
+  <main id="main" tabindex="-1">
+    <noscript>This calculator needs JavaScript. Please open it in a modern browser with JavaScript turned on.</noscript>
+    <div id="panels"></div>
+  </main>
+</div>
+<button type="button" class="stickybar" id="stickybar" hidden><span><span class="sb-l"></span><strong class="sb-v"></strong></span><span class="sb-a">See details</span></button>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- formatting ---------- */
+  var fmt2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var fmtINR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var fmtINR0 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+  var fmtNum = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 });
+  var fmtDec = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 6 });
+  function money(n) { return fmtINR.format(n); }
+  function money0(n) { return fmtINR0.format(n); }
+  function plain(n) { return fmt2.format(n); }
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function trim2(n) { return String(Math.round(n * 100) / 100); }
+  function compact(n) {
+    var a = Math.abs(n);
+    if (a >= 1e7) return '₹' + trim2(n / 1e7) + ' Cr';
+    if (a >= 1e5) return '₹' + trim2(n / 1e5) + ' L';
+    if (a >= 1e3) return '₹' + trim2(n / 1e3) + 'K';
+    return '₹' + Math.round(n);
+  }
+  function words(n) {
+    if (n >= 1e7) return trim2(n / 1e7) + ' crore';
+    if (n >= 1e5) return trim2(n / 1e5) + ' lakh';
+    if (n >= 1e3) return trim2(n / 1e3) + ' thousand';
+    return '';
+  }
+  function dur(y) {
+    var mo = Math.round(y * 12);
+    if (mo > 0 && Math.abs(y * 12 - mo) < 0.01) {
+      if (mo < 12) return mo + (mo === 1 ? ' month' : ' months');
+      var yr = Math.floor(mo / 12), rem = mo % 12;
+      return yr + (yr === 1 ? ' year' : ' years') + (rem ? ' ' + rem + (rem === 1 ? ' month' : ' months') : '');
+    }
+    return fmtNum.format(y) + ' years';
+  }
+  function timeLabel(t) {
+    if (t <= 0) return 'Today';
+    if (t < 1) return Math.round(t * 12) + ' months';
+    return 'Year ' + r1(t);
+  }
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  var MAX_MONEY = 1e10;      // ₹1,000 crore
+  var MAX_RESULT = 1e15;
+  var BASE_RATES = [8, 10, 12, 15];
+
+  /* ---------- financial formulas ---------- */
+  // EMI = P·r·(1+r)^n / ((1+r)^n − 1), r = monthly rate. expm1/log1p keep it accurate for tiny rates.
+  function emiOf(P, annualPct, n) {
+    var r = annualPct / 1200;
+    if (r === 0) return P / n;
+    var g = Math.exp(n * Math.log1p(r));
+    var gm1 = Math.expm1(n * Math.log1p(r));
+    return P * r * g / gm1;
+  }
+  function amortize(P, annualPct, n) {
+    var r = annualPct / 1200, emi = emiOf(P, annualPct, n);
+    var bal = P, rows = [], sumInt = 0, sumPrin = 0;
+    for (var m = 1; m <= n; m++) {
+      var open = bal, interest = open * r, prin = emi - interest;
+      var close = (m === n) ? 0 : open - prin;
+      if (m === n) prin = open;
+      rows.push({ m: m, open: open, interest: interest, prin: prin, emi: emi, close: close });
+      sumInt += interest; sumPrin += prin; bal = close;
+    }
+    return { rows: rows, emi: emi, sumInt: sumInt, sumPrin: sumPrin, sumEmi: emi * n };
+  }
+  function yearly(rows) {
+    var out = [], i, j;
+    for (i = 0; i < rows.length; i += 12) {
+      var ch = rows.slice(i, i + 12), it = 0, pr = 0, em = 0;
+      for (j = 0; j < ch.length; j++) { it += ch[j].interest; pr += ch[j].prin; em += ch[j].emi; }
+      out.push({ m: i / 12 + 1, open: ch[0].open, interest: it, prin: pr, emi: em, close: ch[ch.length - 1].close });
+    }
+    return out;
+  }
+
+  /* ---------- input parsing + validation ---------- */
+  function parseInput(raw) {
+    var s = String(raw).replace(/[,\s₹%]/g, '');
+    if (s === '') return { err: 'empty' };
+    if (s.charAt(0) === '-') return { err: 'neg' };
+    if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return { err: 'nan' };
+    return { v: parseFloat(s) };
+  }
+  function setError(input, errEl, msg) {
+    errEl.textContent = msg;
+    errEl.hidden = !msg;
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    var ctl = input.closest('.ctl');
+    if (ctl) ctl.classList.toggle('bad', !!msg);
+  }
+  function readForm(root, fields) {
+    var vals = {}, ok = true, shown = false;
+    fields.forEach(function (f) {
+      var wrap = $('[data-wrap="' + f.id + '"]', root);
+      var input = $('[data-f]', wrap), errEl = $('.err', wrap), echo = $('.echo', wrap);
+      var msg = '', silent = false, name = f.label;
+      if (echo) echo.textContent = '';
+      if (f.kind === 'select') {
+        vals[f.id] = Number(input.value);
+      } else {
+        var p = parseInput(input.value);
+        if (p.err === 'empty') { msg = 'Enter ' + name.toLowerCase() + '.'; silent = !input.dataset.touched; }
+        else if (p.err === 'neg') msg = name + " can't be negative.";
+        else if (p.err === 'nan') msg = 'Use numbers only, for example 50000 or 7.5.';
+        else if (f.kind === 'money') {
+          if (p.v <= 0) msg = name + ' must be greater than 0.';
+          else if (p.v > MAX_MONEY) msg = name + ' is too large. Keep it below ₹1,000 crore.';
+          else { vals[f.id] = p.v; if (echo && p.v >= 1000) echo.textContent = '= ' + words(p.v); }
+        } else if (f.kind === 'rate') {
+          if (p.v > 100) msg = "Rate can't be above 100%.";
+          else vals[f.id] = p.v;
+        } else if (f.kind === 'duration') {
+          var unit = $('[data-u]', wrap).value;
+          var years = unit === 'months' ? p.v / 12 : p.v;
+          if (p.v <= 0) msg = name + ' must be greater than 0.';
+          else if (years > f.maxYears) msg = name + ' can be up to ' + f.maxYears + ' years (' + f.maxYears * 12 + ' months).';
+          else if (f.wholeMonths && Math.abs(years * 12 - Math.round(years * 12)) > 0.01)
+            msg = 'Use a whole number of months. ' + fmtNum.format(p.v) + ' ' + unit + ' is ' + fmtNum.format(years * 12) + ' months.';
+          else { vals[f.id] = years; vals[f.id + 'M'] = Math.round(years * 12); }
+        }
+      }
+      setError(input, errEl, silent ? '' : msg);
+      if (msg) { ok = false; if (!silent) shown = true; }
+    });
+    return { vals: vals, ok: ok, shown: shown };
+  }
+
+  /* ---------- calculator definitions ---------- */
+  var FREQ = [
+    { v: 1, t: 'Yearly' }, { v: 2, t: 'Half-yearly' }, { v: 4, t: 'Quarterly' },
+    { v: 12, t: 'Monthly' }, { v: 52, t: 'Weekly' }, { v: 365, t: 'Daily' }
+  ];
+  var LOAN_FIELDS = [
+    { id: 'p', kind: 'money', label: 'Loan amount', def: '1000000', hint: 'The amount you borrow.' },
+    { id: 'r', kind: 'rate', label: 'Annual interest rate', def: '9', hint: 'Charged monthly at one-twelfth of this rate.' },
+    { id: 't', kind: 'duration', label: 'Loan tenure', def: '5', unit: 'years', maxYears: 40, wholeMonths: true, hint: 'How long you take to repay. Up to 40 years.' }
+  ];
+  function loanSummary(v, n) {
+    var emi = emiOf(v.p, v.r, n), total = emi * n, rm = v.r / 1200, intPct = (total - v.p) / total * 100;
+    return {
+      emi: emi, total: total, interest: total - v.p, rm: rm,
+      primary: { label: 'Monthly EMI', value: money(emi) },
+      sentence: 'You pay ' + money(emi) + ' every month for ' + n + ' months' + (n > 12 ? ' (' + dur(n / 12) + ')' : '') + '. Of everything you repay, ' + r1(intPct) + '% is interest.',
+      rows: [
+        { label: 'Loan amount', value: money(v.p) },
+        { label: 'Total interest payable', value: money(total - v.p) },
+        { label: 'Total payment', value: money(total) }
+      ],
+      split: { a: { label: 'Principal', value: v.p }, b: { label: 'Interest', value: total - v.p } },
+      formula: 'EMI = P × r × (1 + r)<sup>n</sup> ÷ ((1 + r)<sup>n</sup> − 1)',
+      legend: 'P is the loan amount, r is the monthly rate (annual rate ÷ 12 ÷ 100) and n is the number of monthly instalments.',
+      working: [
+        'r = ' + fmtNum.format(v.r) + ' ÷ 12 ÷ 100 = ' + fmtDec.format(rm) + '&nbsp;&nbsp; n = ' + n + ' months',
+        v.r === 0 ? 'The rate is 0%, so EMI = P ÷ n = <b>' + money(emi) + '</b>'
+                  : 'EMI = ' + money(v.p) + ' × ' + fmtDec.format(rm) + ' × (1 + ' + fmtDec.format(rm) + ')<sup>' + n + '</sup> ÷ ((1 + ' + fmtDec.format(rm) + ')<sup>' + n + '</sup> − 1) = <b>' + money(emi) + '</b>',
+        'Total payment = EMI × n = ' + money(emi) + ' × ' + n + ' = ' + money(total),
+        'Total interest = Total payment − P = ' + money(total - v.p)
+      ],
+      big: total
+    };
+  }
+
+  var CALCS = [
+    { id: 'fv', group: 'Grow money', name: 'Future value', blurb: 'What savings grow into',
+      title: 'Future value', lead: 'Find out what a lump sum will be worth after earning interest for a number of years.',
+      fields: [
+        { id: 'p', kind: 'money', label: 'Principal amount', def: '100000', hint: 'The amount you invest today.' },
+        { id: 'r', kind: 'rate', label: 'Annual interest rate', def: '8', hint: 'Interest is added once a year.' },
+        { id: 't', kind: 'duration', label: 'Time period', def: '5', unit: 'years', maxYears: 100, hint: 'How long the money stays invested.' }
+      ],
+      compute: function (v) {
+        var r = v.r / 100, fv = v.p * Math.pow(1 + r, v.t);
+        return {
+          primary: { label: 'Future value', value: money(fv) },
+          sentence: money0(v.p) + ' grows to ' + money0(fv) + ' in ' + dur(v.t) + ', which is ' + r1((fv / v.p - 1) * 100) + '% more than you put in.',
+          rows: [{ label: 'Amount invested', value: money(v.p) }, { label: 'Interest earned', value: money(fv - v.p) }],
+          split: { a: { label: 'Invested', value: v.p }, b: { label: 'Interest', value: fv - v.p } },
+          formula: 'FV = P × (1 + r)<sup>t</sup>',
+          legend: 'P is the principal, r is the yearly rate as a decimal (8% is 0.08) and t is the time in years.',
+          working: ['FV = ' + money(v.p) + ' × (1 + ' + fmtDec.format(r) + ')<sup>' + fmtNum.format(v.t) + '</sup> = <b>' + money(fv) + '</b>'],
+          big: fv
+        };
+      },
+      chart: function (v) {
+        var T = v.t, r = v.r / 100;
+        return { title: 'Growth over time', sub: 'How your money grows the longer it stays invested', T: T,
+          valueAt: function (x) { return v.p * Math.pow(1 + r, T * x); }, tip: function (x) { return timeLabel(T * x); } };
+      } },
+
+    { id: 'pv', group: 'Grow money', name: 'Present value', blurb: 'What a future sum is worth today',
+      title: 'Present value', lead: 'Find out how much a future amount is worth in today’s money.',
+      fields: [
+        { id: 'fv', kind: 'money', label: 'Future value', def: '200000', hint: 'The amount you expect to receive later.' },
+        { id: 'r', kind: 'rate', label: 'Discount rate', def: '10', hint: 'The yearly return you could earn elsewhere.' },
+        { id: 't', kind: 'duration', label: 'Time period', def: '5', unit: 'years', maxYears: 100, hint: 'How long until you receive it.' }
+      ],
+      compute: function (v) {
+        var r = v.r / 100, pv = v.fv / Math.pow(1 + r, v.t);
+        return {
+          primary: { label: 'Present value', value: money(pv) },
+          sentence: 'To have ' + money0(v.fv) + ' in ' + dur(v.t) + ', you would need ' + money0(pv) + ' today, earning ' + fmtNum.format(v.r) + '% a year.',
+          rows: [{ label: 'Future value', value: money(v.fv) }, { label: 'Lost to discounting', value: money(v.fv - pv) }],
+          split: { a: { label: 'Worth today', value: pv }, b: { label: 'Discount', value: v.fv - pv } },
+          formula: 'PV = FV ÷ (1 + r)<sup>t</sup>',
+          legend: 'FV is the future value, r is the yearly discount rate as a decimal and t is the time in years.',
+          working: ['PV = ' + money(v.fv) + ' ÷ (1 + ' + fmtDec.format(r) + ')<sup>' + fmtNum.format(v.t) + '</sup> = <b>' + money(pv) + '</b>'],
+          big: v.fv
+        };
+      },
+      chart: function (v) {
+        var T = v.t, r = v.r / 100;
+        return { title: 'Value over time', sub: 'How today’s amount grows into the future value', T: T,
+          valueAt: function (x) { return v.fv / Math.pow(1 + r, T * (1 - x)); }, tip: function (x) { return timeLabel(T * x); } };
+      } },
+
+    { id: 'si', group: 'Grow money', name: 'Simple interest', blurb: 'Interest on the principal only',
+      title: 'Simple interest', lead: 'Interest is calculated on the original principal only, so it grows by the same amount every year.',
+      fields: [
+        { id: 'p', kind: 'money', label: 'Principal', def: '50000', hint: 'The amount you lend or deposit.' },
+        { id: 'r', kind: 'rate', label: 'Interest rate', def: '7.5', hint: 'Charged on the original principal every year.' },
+        { id: 't', kind: 'duration', label: 'Time', def: '3', unit: 'years', maxYears: 100 }
+      ],
+      compute: function (v) {
+        var si = v.p * v.r * v.t / 100, mv = v.p + si;
+        return {
+          primary: { label: 'Maturity value', value: money(mv) },
+          sentence: 'At ' + fmtNum.format(v.r) + '% simple interest, ' + money0(v.p) + ' earns ' + money0(v.p * v.r / 100) + ' every year. Over ' + dur(v.t) + ' that adds up to ' + money0(si) + '.',
+          rows: [{ label: 'Principal', value: money(v.p) }, { label: 'Interest earned', value: money(si) }],
+          split: { a: { label: 'Principal', value: v.p }, b: { label: 'Interest', value: si } },
+          formula: 'SI = P × R × T ÷ 100&nbsp;&nbsp;&nbsp; Maturity value = P + SI',
+          legend: 'P is the principal, R is the rate in % per year and T is the time in years.',
+          working: [
+            'SI = ' + money(v.p) + ' × ' + fmtNum.format(v.r) + ' × ' + fmtNum.format(v.t) + ' ÷ 100 = <b>' + money(si) + '</b>',
+            'Maturity value = ' + money(v.p) + ' + ' + money(si) + ' = <b>' + money(mv) + '</b>'
+          ],
+          big: mv
+        };
+      },
+      chart: function (v) {
+        var T = v.t;
+        return { title: 'Growth over time', sub: 'Simple interest adds the same amount every year, so the line is straight', T: T,
+          valueAt: function (x) { return v.p * (1 + v.r * T * x / 100); }, tip: function (x) { return timeLabel(T * x); } };
+      } },
+
+    { id: 'ci', group: 'Grow money', name: 'Compound interest', blurb: 'Interest on interest',
+      title: 'Compound interest', lead: 'Interest is added to the balance at regular intervals, and then earns interest itself.',
+      fields: [
+        { id: 'p', kind: 'money', label: 'Principal', def: '100000', hint: 'The amount you invest today.' },
+        { id: 'r', kind: 'rate', label: 'Annual interest rate', def: '8' },
+        { id: 't', kind: 'duration', label: 'Time', def: '5', unit: 'years', maxYears: 100 },
+        { id: 'n', kind: 'select', label: 'Compounding frequency', def: '4', options: FREQ }
+      ],
+      compute: function (v) {
+        var r = v.r / 100, n = v.n, a = v.p * Math.pow(1 + r / n, n * v.t), ci = a - v.p;
+        var ear = (Math.pow(1 + r / n, n) - 1) * 100, si = v.p * r * v.t, extra = ci - si;
+        var fname = FREQ.filter(function (f) { return f.v === n; })[0].t.toLowerCase();
+        return {
+          primary: { label: 'Maturity value', value: money(a) },
+          sentence: extra < 0.005 ? 'Compounding makes no difference here, because the rate is 0% or the period is very short.'
+            : 'Adding interest ' + fname + ' earns you ' + money0(extra) + ' more than simple interest would over ' + dur(v.t) + '.',
+          rows: [
+            { label: 'Principal', value: money(v.p) },
+            { label: 'Compound interest', value: money(ci) },
+            { label: 'Effective annual rate', value: fmtNum.format(Math.round(ear * 10000) / 10000) + '%' },
+            { label: 'Extra over simple interest', value: money(extra) }
+          ],
+          split: { a: { label: 'Principal', value: v.p }, b: { label: 'Interest', value: ci } },
+          formula: 'A = P × (1 + r ÷ n)<sup>n × t</sup>&nbsp;&nbsp;&nbsp; CI = A − P',
+          legend: 'P is the principal, r is the yearly rate as a decimal, n is how many times a year interest is added (' + fname + ': ' + n + ') and t is the time in years.',
+          working: [
+            'A = ' + money(v.p) + ' × (1 + ' + fmtDec.format(r) + ' ÷ ' + n + ')<sup>' + n + ' × ' + fmtNum.format(v.t) + '</sup> = ' + money(a),
+            'CI = ' + money(a) + ' − ' + money(v.p) + ' = <b>' + money(ci) + '</b>'
+          ],
+          big: a
+        };
+      },
+      chart: function (v) {
+        var T = v.t, r = v.r / 100;
+        return { title: 'Growth over time', sub: 'Interest earns interest, so the line curves upward', T: T,
+          valueAt: function (x) { return v.p * Math.pow(1 + r / v.n, v.n * T * x); }, tip: function (x) { return timeLabel(T * x); } };
+      } },
+
+    { id: 'emi', group: 'Loans', name: 'EMI', blurb: 'Monthly loan instalment',
+      title: 'EMI calculator', lead: 'Work out the fixed monthly instalment for a loan, and what it costs you in total.',
+      fields: LOAN_FIELDS,
+      compute: function (v) { return loanSummary(v, v.tM); },
+      chart: function (v, res) { return loanChart(v, res); } },
+
+    { id: 'schedule', group: 'Loans', name: 'Loan schedule', blurb: 'Month-by-month repayment',
+      title: 'Loan amortization schedule', lead: 'See how every instalment splits into interest and principal, and how the balance falls to zero.',
+      fields: LOAN_FIELDS, schedule: true,
+      compute: function (v) {
+        var res = loanSummary(v, v.tM), s = amortize(v.p, v.r, v.tM), first = s.rows[0], last = s.rows[s.rows.length - 1];
+        res.schedule = s;
+        res.sentence += ' In month 1, ' + Math.round(first.interest / first.emi * 100) + '% of your EMI goes to interest. By month ' + v.tM + ', it is ' + Math.round(last.interest / last.emi * 100) + '%.';
+        res.working.unshift('Each month: Interest = Opening balance × r, Principal repaid = EMI − Interest, Closing balance = Opening balance − Principal repaid.');
+        return res;
+      },
+      chart: function (v, res) { return loanChart(v, res); } },
+
+    { id: 'scenario', group: 'Compare', name: 'Rate scenarios', blurb: 'Compare 8%, 10%, 12%, 15%',
+      title: 'Scenario analysis', lead: 'See how the outcome changes when the interest rate changes. The four standard rates are always included, and you can add your own.',
+      scenario: true }
+  ];
+
+  function loanChart(v, res) {
+    var n = v.tM, am = res.schedule || amortize(v.p, v.r, n);
+    function bal(k) { return k <= 0 ? v.p : am.rows[Math.min(k, n) - 1].close; }
+    return { title: 'Outstanding loan balance', sub: 'How much of the loan you still owe as you repay it', T: n / 12, monthly: n,
+      valueAt: function (x) { var m = x * n, i = Math.floor(m), fr = m - i; return bal(i) + (bal(Math.min(i + 1, n)) - bal(i)) * fr; },
+      tip: function (x) { return 'Month ' + Math.round(x * n) + ' of ' + n; },
+      xl: ['Start', 'Month ' + Math.round(n / 2), 'Month ' + n] };
+  }
+
+  /* ---------- shared UI builders ---------- */
+  function fieldHTML(pid, f) {
+    var id = pid + '-' + f.id;
+    var desc = (f.kind === 'money' ? id + '-w ' : '') + (f.hint ? id + '-h ' : '') + id + '-e';
+    var hint = f.hint ? '<p class="hint" id="' + id + '-h">' + f.hint + '</p>' : '';
+    var echo = f.kind === 'money' ? '<p class="echo" id="' + id + '-w"></p>' : '';
+    var ctl;
+    if (f.kind === 'select') {
+      ctl = '<div class="ctl sel"><select id="' + id + '" data-f="' + f.id + '" aria-describedby="' + desc + '">' +
+        f.options.map(function (o) { return '<option value="' + o.v + '"' + (String(o.v) === String(f.def) ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') +
+        '</select></div>';
+    } else {
+      var pre = f.kind === 'money' ? '<span class="aff" aria-hidden="true">₹</span>' : '';
+      var suf = f.kind === 'rate' ? '<span class="aff" aria-hidden="true">% per year</span>' : '';
+      var u = f.unit === 'months' ? 'months' : 'years';
+      var unit = f.kind === 'duration'
+        ? '<select class="unit" data-u data-prev="' + u + '" aria-label="' + esc(f.label) + ' unit"><option value="years"' + (u === 'years' ? ' selected' : '') + '>Years</option><option value="months"' + (u === 'months' ? ' selected' : '') + '>Months</option></select>'
+        : '';
+      ctl = '<div class="ctl">' + pre + '<input id="' + id + '" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + f.def + '" data-f="' + f.id + '" aria-describedby="' + desc + '">' + suf + unit + '</div>';
+    }
+    return '<div class="field" data-wrap="' + f.id + '"><label for="' + id + '">' + f.label + '</label>' + ctl + echo + hint + '<p class="err" id="' + id + '-e" hidden></p></div>';
+  }
+  function resetFields(root, fields) {
+    fields.forEach(function (f) {
+      var wrap = $('[data-wrap="' + f.id + '"]', root), input = $('[data-f]', wrap);
+      input.value = f.def; delete input.dataset.touched;
+      var u = $('[data-u]', wrap); if (u) { u.value = f.unit || 'years'; u.dataset.prev = u.value; }
+    });
+  }
+  // Switching Years <-> Months converts the number instead of silently changing its meaning.
+  function convertUnit(sel) {
+    var wrap = sel.closest('[data-wrap]'), input = $('[data-f]', wrap), prev = sel.dataset.prev || 'years';
+    if (prev === sel.value) return;
+    var p = parseInput(input.value);
+    if (!p.err) {
+      var v = sel.value === 'months' ? p.v * 12 : p.v / 12, whole = Math.round(v);
+      input.value = String(Math.abs(v - whole) < 0.001 ? whole : Math.round(v * 1e6) / 1e6);
+    }
+    sel.dataset.prev = sel.value;
+  }
+  function splitHTML(s) {
+    var total = s.a.value + s.b.value, pa = total > 0 ? s.a.value / total * 100 : 100, pb = 100 - pa;
+    return '<div class="split" role="img" aria-label="' + s.a.label + ' ' + pa.toFixed(0) + ' percent, ' + s.b.label + ' ' + pb.toFixed(0) + ' percent">' +
+      '<span class="seg a" style="width:' + pa + '%"></span><span class="seg b" style="width:' + pb + '%"></span></div>' +
+      '<div class="legend"><span><i class="dot a"></i>' + s.a.label + ' ' + pa.toFixed(1) + '%</span><span><i class="dot b"></i>' + s.b.label + ' ' + pb.toFixed(1) + '%</span></div>';
+  }
+  function emptyHTML(title, msg) { return '<div class="empty"><strong>' + title + '</strong>' + msg + '</div>'; }
+
+  /* ---------- line chart (labels are real HTML so text never stretches) ---------- */
+  function chartHTML(m) {
+    var N = 80, ys = [], i;
+    for (i = 0; i <= N; i++) ys.push(m.valueAt(i / N));
+    var max = Math.max.apply(null, ys) || 1; m.max = max;
+    var line = ys.map(function (y, i) { return (i ? 'L' : 'M') + (i / N * 100).toFixed(2) + ' ' + (100 - y / max * 100).toFixed(2); }).join(' ');
+    var xl = m.xl || ['Today', timeLabel(m.T / 2), timeLabel(m.T)];
+    var startTxt = money(m.valueAt(0)), endTxt = money(m.valueAt(1));
+    var endTop = 100 - ys[N] / max * 100;
+    return '<div class="card chart-card"><div class="chart-head"><div><h3>' + m.title + '</h3><p>' + m.sub + '</p></div><span class="chart-stat">' + startTxt + ' to ' + endTxt + '</span></div>' +
+      '<div class="chart"><div class="plot" tabindex="0" role="group" aria-label="' + m.title + ' from ' + startTxt + ' to ' + endTxt + '. Use the left and right arrow keys to explore.">' +
+      [1, 0.5, 0].map(function (t) { return '<span class="yl" style="top:' + ((1 - t) * 100) + '%">' + compact(max * t) + '</span>'; }).join('') +
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+      '<line class="c-grid" x1="0" x2="100" y1="0" y2="0"/><line class="c-grid" x1="0" x2="100" y1="50" y2="50"/><line class="c-grid" x1="0" x2="100" y1="100" y2="100"/>' +
+      '<path class="c-area" d="' + line + ' L100 100 L0 100 Z"/><path class="c-line" d="' + line + '"/></svg>' +
+      '<span class="enddot" style="left:100%;top:' + endTop + '%"></span>' +
+      '<div class="cursor" hidden><span class="cdot"></span></div><div class="tip" role="status" hidden></div></div>' +
+      '<div class="xl"><span>' + xl[0] + '</span><span>' + xl[1] + '</span><span>' + xl[2] + '</span></div></div>' +
+      '<p class="chart-hint">Hover, tap or drag across the chart to see the value at any point.</p></div>';
+  }
+  function moveCursor(sec, f) {
+    var m = sec._chart, plot = $('.plot', sec);
+    if (!m || !plot) return;
+    f = Math.max(0, Math.min(1, f)); sec._f = f;
+    var y = m.valueAt(f), top = 100 - y / m.max * 100;
+    var cur = $('.cursor', plot), tip = $('.tip', plot);
+    cur.hidden = false; cur.style.left = (f * 100) + '%';
+    $('.cdot', cur).style.top = top + '%';
+    tip.hidden = false; tip.style.left = (f * 100) + '%';
+    if (top < 35) { tip.style.top = 'calc(' + top + '% + 16px)'; tip.style.transform = 'translate(-' + (f * 100) + '%,0)'; }
+    else { tip.style.top = 'calc(' + top + '% - 16px)'; tip.style.transform = 'translate(-' + (f * 100) + '%,-100%)'; }
+    tip.innerHTML = '<b>' + m.tip(f) + '</b><br>' + money(y);
+  }
+  function hideCursor(sec) {
+    var plot = $('.plot', sec); if (!plot) return;
+    $('.cursor', plot).hidden = true; $('.tip', plot).hidden = true;
+  }
+  function fracFromEvent(e, plot) {
+    var rect = plot.getBoundingClientRect();
+    return rect.width ? (e.clientX - rect.left) / rect.width : 0;
+  }
+
+  /* ---------- standard panels ---------- */
+  function standardHTML(c) {
+    var form = c.fields.map(function (f) { return fieldHTML(c.id, f); }).join('');
+    return '<header class="ph"><h2>' + c.title + '</h2><p>' + c.lead + '</p></header>' +
+      '<div class="grid">' +
+        '<div class="card"><div class="card-h"><h3>Your numbers</h3><button type="button" class="link reset">Reset to example</button></div>' + form + '</div>' +
+        '<div class="res"><div class="out" aria-live="polite"></div>' +
+          '<details class="working"><summary>Show the formula and working</summary><div class="wk"></div></details></div>' +
+      '</div><div class="graph-slot"></div>' +
+      (c.schedule
+        ? '<div class="card sched" hidden><div class="card-h"><h3>Repayment schedule</h3><div class="sched-tools">' +
+          '<div class="segctl" role="radiogroup" aria-label="Schedule detail"><label><input type="radio" name="sched-view" value="monthly" checked><span>Monthly</span></label><label><input type="radio" name="sched-view" value="yearly"><span>Yearly</span></label></div>' +
+          '<button type="button" class="btn ghost dl">Download CSV</button><button type="button" class="btn ghost prt">Print</button></div></div>' +
+          '<div class="tbl-wrap" role="region" aria-label="Loan amortization schedule" tabindex="0"><table>' +
+          '<thead><tr><th scope="col" class="c-first">Month</th><th scope="col">Opening Balance</th><th scope="col">Interest</th><th scope="col">Principal Repaid</th><th scope="col">EMI</th><th scope="col">Closing Balance</th></tr></thead>' +
+          '<tbody></tbody><tfoot></tfoot></table></div><p class="note sched-note"></p></div>'
+        : '');
+  }
+  function inputText(sec, f) {
+    var wrap = $('[data-wrap="' + f.id + '"]', sec), input = $('[data-f]', wrap);
+    if (f.kind === 'select') return input.options[input.selectedIndex].text;
+    var raw = input.value.trim();
+    var p = parseInput(raw), n = p.err ? raw : fmtNum.format(p.v);
+    if (f.kind === 'money') return '₹' + n;
+    if (f.kind === 'rate') return n + '%';
+    return n + ' ' + $('[data-u]', wrap).value;
+  }
+  function updateStandard(sec) {
+    var c = sec._calc, r = readForm(sec, c.fields);
+    var out = $('.out', sec), wk = $('.wk', sec), det = $('.working', sec), sched = $('.sched', sec), slot = $('.graph-slot', sec);
+    function blank(title, msg) {
+      out.innerHTML = emptyHTML(title, msg); slot.innerHTML = ''; det.hidden = true; if (sched) sched.hidden = true;
+      sec._chart = null; sec._copy = null; sec._bar = null; applyBar(sec);
+    }
+    if (!r.ok) return blank('No result yet', r.shown ? 'Fix the highlighted field to see your result.' : 'Fill in every field to see your result.');
+    var res = c.compute(r.vals);
+    if (!isFinite(res.big) || res.big > MAX_RESULT) return blank('Number too large', 'These numbers give a result too large to show. Try a lower rate or a shorter time.');
+
+    out.innerHTML = '<div class="hero"><span class="hl">' + res.primary.label + '</span><strong class="hv">' + res.primary.value + '</strong>' +
+      '<p class="sentence">' + res.sentence + '</p></div>' +
+      '<dl class="rows">' + res.rows.map(function (x) { return '<div><dt>' + x.label + '</dt><dd>' + x.value + '</dd></div>'; }).join('') + '</dl>' +
+      splitHTML(res.split) + '<button type="button" class="copy">Copy result</button>';
+    det.hidden = false;
+    wk.innerHTML = '<p class="formula">' + res.formula + '</p><p class="small">' + res.legend + '</p><p class="sub">With your numbers</p>' +
+      res.working.map(function (w) { return '<p class="formula">' + w + '</p>'; }).join('');
+
+    var lines = [c.title + ' (TVM Calculator)'];
+    c.fields.forEach(function (f) { lines.push(f.label + ': ' + inputText(sec, f)); });
+    lines.push('', res.primary.label + ': ' + res.primary.value);
+    res.rows.forEach(function (x) { lines.push(x.label + ': ' + x.value); });
+    sec._copy = lines.join('\n');
+    sec._bar = { label: res.primary.label, value: res.primary.value };
+    applyBar(sec);
+
+    if (c.chart) { sec._chart = c.chart(r.vals, res); slot.innerHTML = chartHTML(sec._chart); }
+    if (sched) { sec._sched = res.schedule; sched.hidden = false; renderSchedule(sec); }
+  }
+  function renderSchedule(sec) {
+    var s = sec._sched, sched = $('.sched', sec); if (!s) return;
+    var yr = sec._view === 'yearly', rows = yr ? yearly(s.rows) : s.rows;
+    $('.c-first', sched).textContent = yr ? 'Year' : 'Month';
+    $('tbody', sched).innerHTML = rows.map(function (x) {
+      return '<tr' + (!yr && x.m % 12 === 0 ? ' class="yr"' : '') + '><td>' + x.m + '</td><td>' + plain(x.open) + '</td><td>' + plain(x.interest) + '</td><td>' + plain(x.prin) + '</td><td>' + plain(x.emi) + '</td><td>' + plain(x.close) + '</td></tr>';
+    }).join('');
+    $('tfoot', sched).innerHTML = '<tr><td>Total</td><td></td><td>' + plain(s.sumInt) + '</td><td>' + plain(s.sumPrin) + '</td><td>' + plain(s.sumEmi) + '</td><td></td></tr>';
+    $('.sched-note', sched).textContent = yr
+      ? 'All amounts in ₹. Each row adds up the monthly instalments for one year (the last year may be shorter).'
+      : 'All amounts in ₹. ' + s.rows.length + ' monthly instalments. A darker line marks the end of each year.';
+  }
+  function downloadCSV(sec) {
+    var s = sec._sched; if (!s) return;
+    var lines = ['Month,Opening Balance,Interest,Principal Repaid,EMI,Closing Balance'];
+    s.rows.forEach(function (x) { lines.push([x.m, x.open, x.interest, x.prin, x.emi, x.close].map(function (n, i) { return i === 0 ? n : n.toFixed(2); }).join(',')); });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'amortization_schedule.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function copyResult(sec, btn) {
+    var txt = sec._copy; if (!txt) return;
+    function done() { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy result'; }, 1600); }
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { if (document.execCommand('copy')) done(); } catch (e) {}
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  }
+
+  /* ---------- scenario panel ---------- */
+  function scFields(mode) {
+    var f = [
+      { id: 'p', kind: 'money', label: mode === 'loan' ? 'Loan amount' : 'Amount to invest', def: '500000' },
+      { id: 't', kind: 'duration', label: mode === 'loan' ? 'Loan tenure' : 'Time period', def: '5', unit: 'years', maxYears: mode === 'loan' ? 40 : 100, wholeMonths: mode === 'loan' }
+    ];
+    if (mode === 'invest') f.push({ id: 'n', kind: 'select', label: 'Compounding frequency', def: '1', options: FREQ });
+    return f;
+  }
+  function scenarioHTML(c) {
+    var all = scFields('invest');
+    return '<header class="ph"><h2>' + c.title + '</h2><p>' + c.lead + '</p></header>' +
+      '<div class="grid">' +
+        '<div class="card"><div class="card-h"><h3>Your numbers</h3><button type="button" class="link reset">Reset to example</button></div>' +
+          '<div class="field"><span class="lab" id="sc-mode-l">What are you comparing?</span>' +
+            '<div class="segctl" role="radiogroup" aria-labelledby="sc-mode-l">' +
+              '<label><input type="radio" name="sc-mode" value="loan" checked><span>A loan</span></label>' +
+              '<label><input type="radio" name="sc-mode" value="invest"><span>An investment</span></label></div></div>' +
+          fieldHTML('sc', all[0]) + fieldHTML('sc', all[1]) + fieldHTML('sc', all[2]) + '</div>' +
+        '<div class="card"><div class="card-h"><h3>Interest rates compared</h3></div>' +
+          '<p class="hint" style="margin-top:0">These four are always included:</p>' +
+          '<ul class="chips">' + BASE_RATES.map(function (r) { return '<li class="chip">' + r + '%</li>'; }).join('') + '</ul>' +
+          '<div class="field" style="margin-top:22px"><label for="sc-add">Add another rate to compare</label>' +
+            '<div class="addrate"><div class="ctl"><input id="sc-add" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 9.5" aria-describedby="sc-add-e"><span class="aff" aria-hidden="true">% per year</span></div>' +
+            '<button type="button" class="btn addbtn">Add rate</button></div>' +
+            '<p class="err" id="sc-add-e" hidden></p></div>' +
+          '<ul class="chips custom-chips" aria-label="Your added rates"></ul></div>' +
+      '</div>' +
+      '<div class="card scout"><div class="body" aria-live="polite"></div></div>';
+  }
+  function allRates(st) {
+    var seen = {}, list = [];
+    BASE_RATES.concat(st.custom).forEach(function (r) { if (!seen[r]) { seen[r] = 1; list.push(r); } });
+    return list.sort(function (a, b) { return a - b; });
+  }
+  function renderChips(sec) {
+    $('.custom-chips', sec).innerHTML = sec._st.custom.map(function (r) {
+      return '<li><button type="button" class="chip custom" data-rm="' + r + '" aria-label="Remove ' + r + '% rate">' + r + '% &times;</button></li>';
+    }).join('');
+  }
+  function updateScenario(sec) {
+    var st = sec._st, fields = scFields(st.mode);
+    $('[data-wrap="n"]', sec).hidden = st.mode === 'loan';
+    $('[data-wrap="p"] label', sec).textContent = fields[0].label;
+    $('[data-wrap="t"] label', sec).textContent = fields[1].label;
+    var body = $('.scout .body', sec);
+    var r = readForm(sec, fields);
+    if (!r.ok) { body.innerHTML = '<p class="note" style="margin:0">' + (r.shown ? 'Fix the highlighted field to compare rates.' : 'Fill in every field to compare rates.') + '</p>'; return; }
+    var v = r.vals, rates = allRates(st), rows, ok = true;
+    if (st.mode === 'loan') {
+      rows = rates.map(function (rate) {
+        var emi = emiOf(v.p, rate, v.tM), total = emi * v.tM;
+        return { rate: rate, a: emi, b: total - v.p, c: total, key: total - v.p };
+      });
+    } else {
+      rows = rates.map(function (rate) {
+        var a = v.p * Math.pow(1 + rate / 100 / v.n, v.n * v.t);
+        return { rate: rate, a: a, b: a - v.p, c: (a - v.p) / v.p * 100, key: a - v.p };
+      });
+    }
+    rows.forEach(function (x) { if (!isFinite(x.key) || x.key > MAX_RESULT) ok = false; });
+    if (!ok) { body.innerHTML = '<p class="note" style="margin:0">These numbers give a result too large to show. Try a lower rate or a shorter time.</p>'; return; }
+
+    var lo = rows[0], hi = rows[rows.length - 1], maxKey = Math.max.apply(null, rows.map(function (x) { return x.key; })) || 1;
+    var loan = st.mode === 'loan', insight, head, tagLo, tagHi;
+    if (loan) {
+      insight = 'At ' + hi.rate + '% your EMI is ' + money(hi.a - lo.a) + ' higher than at ' + lo.rate + '%, and you pay ' + money(hi.b - lo.b) + ' more interest over the loan.';
+      head = ['Monthly EMI', 'Total interest', 'Total payment']; tagLo = 'Lowest cost'; tagHi = 'Highest cost';
+    } else {
+      insight = 'At ' + hi.rate + '% your ' + money(v.p) + ' grows to ' + money(hi.a) + ', which is ' + money(hi.a - lo.a) + ' more than at ' + lo.rate + '%.';
+      head = ['Maturity value', 'Interest earned', 'Growth']; tagLo = 'Lowest return'; tagHi = 'Highest return';
+    }
+    var cap = loan ? 'Loan of ' + money(v.p) + ' over ' + v.tM + ' months'
+      : money(v.p) + ' invested for ' + dur(v.t) + ', compounded ' + FREQ.filter(function (f) { return f.v === v.n; })[0].t.toLowerCase();
+    var bars = '<h4 class="hb-t">' + (loan ? 'Total interest you would pay at each rate' : 'Interest you would earn at each rate') + '</h4><div class="hbars" role="img" aria-label="Bar chart comparing the outcome at each interest rate">' +
+      rows.map(function (x) {
+        return '<div class="hrow"><span class="hr">' + x.rate + '%</span><span class="htrack"><span class="hfill' + (loan ? ' cost' : '') + '" style="width:' + Math.max(1, x.key / maxKey * 100) + '%"></span></span><span class="hval">' + money0(x.key) + '</span></div>';
+      }).join('') + '</div>';
+    body.innerHTML =
+      '<p class="insight">' + insight + '</p>' + bars +
+      '<div class="tbl-wrap" role="region" aria-label="Scenario comparison" tabindex="0"><table><caption class="note" style="text-align:left;caption-side:top;padding:0 0 10px">' + cap + '</caption>' +
+      '<thead><tr><th scope="col">Interest rate</th><th scope="col">' + head[0] + '</th><th scope="col">' + head[1] + '</th><th scope="col">' + head[2] + '</th></tr></thead><tbody>' +
+      rows.map(function (x, i) {
+        var tag = i === 0 ? '<span class="tag">' + tagLo + '</span>' : (i === rows.length - 1 ? '<span class="tag hi">' + tagHi + '</span>' : '');
+        var third = loan ? money(x.c) : fmtNum.format(Math.round(x.c * 100) / 100) + '%';
+        return '<tr><td><strong>' + x.rate + '%</strong>' + tag + '</td><td>' + money(x.a) + '</td><td>' + money(x.b) + '</td><td>' + third + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function addRate(sec) {
+    var st = sec._st, inp = $('#sc-add', sec), err = $('#sc-add-e', sec), p = parseInput(inp.value), msg = '';
+    if (p.err === 'empty') msg = 'Enter a rate to add.';
+    else if (p.err === 'neg') msg = "Rate can't be negative.";
+    else if (p.err === 'nan') msg = 'Use numbers only, for example 9.5.';
+    else if (p.v > 100) msg = "Rate can't be above 100%.";
+    else if (allRates(st).indexOf(p.v) !== -1) msg = p.v + '% is already in the comparison.';
+    else if (st.custom.length >= 4) msg = 'You can add up to 4 extra rates. Remove one first.';
+    setError(inp, err, msg);
+    if (msg) return;
+    st.custom.push(p.v); inp.value = ''; renderChips(sec); updateScenario(sec);
+  }
+
+  /* ---------- mobile result bar ---------- */
+  var bar = $('#stickybar'), activeSec = null, resVisible = true, io = null;
+  function applyBar(sec) {
+    if (sec !== activeSec) return;
+    if (sec._bar) { $('.sb-l', bar).textContent = sec._bar.label; $('.sb-v', bar).textContent = sec._bar.value; }
+    bar.hidden = !sec._bar || resVisible;
+  }
+  if ('IntersectionObserver' in window) {
+    io = new IntersectionObserver(function (es) { resVisible = es[0].isIntersecting; if (activeSec) applyBar(activeSec); }, { threshold: 0.2 });
+  }
+  bar.addEventListener('click', function () {
+    var res = activeSec && $('.res', activeSec); if (!res) return;
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    res.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  /* ---------- build the app ---------- */
+  var nav = $('#nav'), picker = $('#calc-picker'), panelsEl = $('#panels'), lastGroup = '';
+  CALCS.forEach(function (c) {
+    if (c.group !== lastGroup) { nav.insertAdjacentHTML('beforeend', '<div class="grp">' + c.group + '</div>'); lastGroup = c.group; }
+    nav.insertAdjacentHTML('beforeend', '<a href="#' + c.id + '" data-id="' + c.id + '"><strong>' + c.name + '</strong><span>' + c.blurb + '</span></a>');
+    picker.insertAdjacentHTML('beforeend', '<option value="' + c.id + '">' + c.name + '</option>');
+
+    var sec = document.createElement('section');
+    sec.className = 'panel'; sec.id = 'panel-' + c.id; sec.hidden = true; sec._calc = c;
+    panelsEl.appendChild(sec);
+
+    // select the whole number when a field gets focus, so typing replaces the example value
+    sec.addEventListener('focusin', function (e) {
+      if (e.target.matches('input[type="text"]')) setTimeout(function () { try { e.target.select(); } catch (x) {} }, 0);
+    });
+
+    if (c.scenario) {
+      sec._st = { mode: 'loan', custom: [] };
+      sec.innerHTML = scenarioHTML(c);
+      sec.addEventListener('input', function (e) { if (e.target.id !== 'sc-add') updateScenario(sec); });
+      sec.addEventListener('change', function (e) {
+        if (e.target.matches('[data-u]')) convertUnit(e.target);
+        if (e.target.name === 'sc-mode') sec._st.mode = e.target.value;
+        updateScenario(sec);
+      });
+      sec.addEventListener('focusout', function (e) {
+        if (e.target.matches('input[data-f]')) { e.target.dataset.touched = '1'; updateScenario(sec); }
+      });
+      sec.addEventListener('click', function (e) {
+        var rm = e.target.closest('[data-rm]');
+        if (rm) { sec._st.custom = sec._st.custom.filter(function (r) { return String(r) !== rm.getAttribute('data-rm'); }); renderChips(sec); updateScenario(sec); $('#sc-add', sec).focus(); return; }
+        if (e.target.closest('.addbtn')) return addRate(sec);
+        if (e.target.closest('.reset')) {
+          sec._st = { mode: 'loan', custom: [] };
+          $('input[name="sc-mode"][value="loan"]', sec).checked = true;
+          resetFields(sec, scFields('invest')); $('#sc-add', sec).value = ''; setError($('#sc-add', sec), $('#sc-add-e', sec), '');
+          renderChips(sec); updateScenario(sec);
+        }
+      });
+      $('#sc-add', sec).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addRate(sec); } });
+      updateScenario(sec);
+    } else {
+      sec.innerHTML = standardHTML(c);
+      sec.addEventListener('input', function () { updateStandard(sec); });
+      sec.addEventListener('change', function (e) {
+        if (e.target.name === 'sched-view') { sec._view = e.target.value; renderSchedule(sec); return; }
+        if (e.target.matches('[data-u]')) convertUnit(e.target);
+        updateStandard(sec);
+      });
+      sec.addEventListener('focusout', function (e) {
+        if (e.target.matches('input[data-f]')) { e.target.dataset.touched = '1'; updateStandard(sec); }
+      });
+      sec.addEventListener('click', function (e) {
+        if (e.target.closest('.reset')) { resetFields(sec, c.fields); updateStandard(sec); }
+        else if (e.target.closest('.dl')) downloadCSV(sec);
+        else if (e.target.closest('.prt')) window.print();
+        else if (e.target.closest('.copy')) copyResult(sec, e.target.closest('.copy'));
+      });
+      // chart: hover, touch-drag and arrow keys
+      sec.addEventListener('pointermove', function (e) { var p = e.target.closest && e.target.closest('.plot'); if (p) moveCursor(sec, fracFromEvent(e, p)); });
+      sec.addEventListener('pointerdown', function (e) { var p = e.target.closest && e.target.closest('.plot'); if (p) moveCursor(sec, fracFromEvent(e, p)); });
+      sec.addEventListener('pointerleave', function (e) { if (e.target.classList && e.target.classList.contains('plot') && document.activeElement !== e.target) hideCursor(sec); }, true);
+      sec.addEventListener('focusout', function (e) { if (e.target.classList && e.target.classList.contains('plot')) hideCursor(sec); });
+      sec.addEventListener('keydown', function (e) {
+        if (!e.target.classList || !e.target.classList.contains('plot')) return;
+        var f = sec._f == null ? 1 : sec._f, step = 1 / 24;
+        if (e.key === 'ArrowRight') f += step; else if (e.key === 'ArrowLeft') f -= step;
+        else if (e.key === 'Home') f = 0; else if (e.key === 'End') f = 1; else return;
+        e.preventDefault(); moveCursor(sec, f);
+      });
+      updateStandard(sec);
+    }
+  });
+
+  function route(initial) {
+    var id = (location.hash || '#fv').slice(1);
+    var c = CALCS.filter(function (x) { return x.id === id; })[0] || CALCS[0];
+    picker.value = c.id;
+    $$('.panel').forEach(function (p) { p.hidden = p.id !== 'panel-' + c.id; });
+    $$('#nav a').forEach(function (a) {
+      if (a.getAttribute('data-id') === c.id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    activeSec = $('#panel-' + c.id);
+    resVisible = true; bar.hidden = true;
+    if (io) { io.disconnect(); var res = $('.res', activeSec); if (res) io.observe(res); }
+    if (!io || !$('.res', activeSec)) resVisible = true;
+    document.title = c.name + ' | TVM Calculator';
+    if (!initial) window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', function () { route(false); });
+  picker.addEventListener('change', function () { location.hash = picker.value; });
+  route(true);
+})();
+</script>
+</body>
+</html>
